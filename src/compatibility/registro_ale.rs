@@ -86,10 +86,7 @@ pub fn build_registry(
     spinner.set_message(format!("Extracting {worksheet}"));
 
     let mut workbook: Xlsx<_> = open_workbook(path).unwrap();
-    let range = workbook
-        .worksheet_range(worksheet)
-        .unwrap()
-        .expect("worksheet not found");
+    let range = workbook.worksheet_range(worksheet).unwrap()?;
 
     let transactions = retrieve_transactions(&range)?;
     let accounts = retrieve_accounts(worksheet, &range)?;

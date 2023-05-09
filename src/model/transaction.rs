@@ -95,12 +95,8 @@ impl TransactionEvent {
     ///
     /// First, it serializes it as a JSON string, then
     /// it uses the Polars JsonReader to create the DataFrame
-    pub fn to_dataframe(&self) -> DataFrame {
-        JsonReader::new(Cursor::new(
-            serde_json::to_string(&[&self]).expect("Transition should be able to json serialize"),
-        ))
-        .finish()
-        .expect("Failed to export TransactionEvent to DataFrame")
+    pub fn to_dataframe(&self) -> Result<DataFrame, Box<dyn std::error::Error>> {
+        Ok(JsonReader::new(Cursor::new(serde_json::to_string(&[&self])?)).finish()?)
     }
 }
 

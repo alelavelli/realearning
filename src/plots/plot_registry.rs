@@ -1,6 +1,6 @@
-use plotters::prelude::*;
 use crate::model::registry::Registry;
 use crate::plots::extraction::monthy_extraction;
+use plotters::prelude::*;
 
 use super::extraction::{extract_categories_split, extract_daily_transactions};
 use super::plot_utils::palettes::Palette;

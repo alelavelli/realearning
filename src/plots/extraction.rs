@@ -61,7 +61,7 @@ fn filter_registry_df(
     registry: &Registry,
     accounts: Option<&Vec<String>>,
     date_range: Option<(&NaiveDate, &NaiveDate)>,
-) -> Result<DataFrame, PolarsError> {
+) -> Result<DataFrame, Box<dyn std::error::Error>> {
     let mut df = registry.to_dataframe()?.lazy();
 
     if let Some(vector) = accounts {

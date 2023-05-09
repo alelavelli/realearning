@@ -88,7 +88,7 @@ impl Registry {
     ///
     /// First, it serializes it as a JSON string, then
     /// it uses the Polars JsonReader to create the DataFrame
-    pub fn to_dataframe(&self) -> Result<DataFrame, PolarsError> {
+    pub fn to_dataframe(&self) -> Result<DataFrame, Box<dyn std::error::Error>> {
         let myschema = Schema::from(
             vec![
                 Field::new("date", DataType::Float32),
@@ -99,13 +99,11 @@ impl Registry {
             ]
             .into_iter(),
         );
-        let df = JsonReader::new(Cursor::new(
-            serde_json::to_string(&self.transactions)
-                .expect("Transitions should be able to json serialize"),
-        ))
-        .with_schema(&myschema)
-        .finish()?;
-        df
+        let df = JsonReader::new(Cursor::new(serde_json::to_string(&self.transactions)?))
+            .with_schema(&myschema)
+            .finish()?;
+
+        Ok(df
             .lazy()
             .with_column(col("date").str().strptime(StrpTimeOptions {
                 date_dtype: DataType::Date,
@@ -116,7 +114,7 @@ impl Registry {
                 tz_aware: false,
                 utc: false,
             }))
-            .collect()
+            .collect()?)
     }
 
     /// Build a regstry from a dumped csv
@@ -133,11 +131,7 @@ impl Registry {
 
     /// Dumps the registry as csv
     pub fn to_csv(&self, path: &str) -> Result<(), io::Error> {
-        let file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .open(path)
-            .expect("Error in opening the file");
+        let file = OpenOptions::new().write(true).create(true).open(path)?;
 
         let mut wtr = csv::Writer::from_writer(file);
         for transaction in &self.transactions {
