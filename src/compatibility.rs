@@ -1,8 +1,8 @@
 //! # Compatibility
 //!
-//! The `compatibility` library contains code that converts
+//! The `compatibility` module contains code that converts
 //! registries in different format and with different schema
-//! to the actual `realearning` structure.
+//! to the actual of`realearning` structure.
 //!
 //! # Modules
 //!
@@ -30,8 +30,10 @@ mod compatibility_errors {
 /// use strum_macros::{Display, EnumString};
 #[derive(EnumString, Display, Clone, Debug)]
 pub enum CompatibilityEnum {
+    /// Standard schema, there is no need of compatibility
     #[strum(ascii_case_insensitive)]
     Base,
+    /// Version of Ale schema
     #[strum(ascii_case_insensitive)]
     Ale,
 }

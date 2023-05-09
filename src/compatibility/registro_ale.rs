@@ -55,9 +55,19 @@ pub fn build_registry_batch(
 
 /// Build the Registry strut from the excel file.
 ///
-/// First of all loads the excel, then extract from the first row
+/// First of all loads the excel, then extracts from the first row
 /// the names and the indexes of the columns. Then iterates for each
 /// row to create TransactionEvent by adding it to the Registry.
+///
+/// # Parameters
+///
+/// * `path`: path of the excel file
+/// * `worksheet`: name of the worksheet file
+/// * `multi_progress`: MultiProgress struct used to plot the progress bar
+///
+/// # Returns
+///
+/// * `Registry`: the extracted registry from the worksheet
 pub fn build_registry(
     path: &str,
     worksheet: &str,
@@ -103,6 +113,14 @@ pub fn build_registry(
 /// The first row contains the columns and the iteration gets their positions.
 /// Then, the second iteration retreive the data from each row and creates transaction
 /// structs.
+///
+/// # Parameters
+///
+/// * `range`: calamine::Range that represents a set of rows in the worksheet
+///
+/// # Returns
+///
+/// * Vector of transaction events extracted from the worksheet
 fn retrieve_transactions(
     range: &Range<DataType>,
 ) -> Result<Vec<TransactionEvent>, ExtractionError> {
@@ -174,6 +192,15 @@ fn retrieve_transactions(
 ///
 /// The accounts information are stored in a table near the the transaction one.
 /// Therefore, the column definition step needs to go beyond the first set of non empty columns.
+///
+/// # Parameters
+///
+/// * `worksheet`: name of the worksheet
+/// * `range`: calamine::Range with the rows in the worksheet
+///
+/// # Returns
+///
+/// * Vector with accounts
 fn retrieve_accounts(
     worksheet: &str,
     range: &Range<DataType>,

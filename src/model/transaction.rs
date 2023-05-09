@@ -1,3 +1,5 @@
+//! Transaction module contain structs and enums to represent transaction events
+
 use chrono::NaiveDate;
 use polars::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -114,5 +116,43 @@ impl fmt::Display for TransactionEvent {
                 None => "missing",
             }
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::NaiveDate;
+
+    use crate::model::account::TransactionAccountName;
+
+    use super::{TransactionCategory, TransactionEvent};
+
+    #[test]
+    fn create_transaction_event() {
+        let transaction_event = TransactionEvent::new(
+            NaiveDate::parse_from_str("2023-05-09", "%Y-%m-%d").unwrap(),
+            32.0,
+            TransactionCategory::Affitto,
+            None,
+            TransactionAccountName::Ale,
+        );
+        let other_transaction = TransactionEvent {
+            date: NaiveDate::parse_from_str("2023-05-09", "%Y-%m-%d").unwrap(),
+            amount: 32.0,
+            category: TransactionCategory::Affitto,
+            description: None,
+            account: TransactionAccountName::Ale,
+        };
+        assert_eq!(transaction_event.date, other_transaction.date);
+        assert_eq!(transaction_event.amount, other_transaction.amount);
+        assert_eq!(
+            transaction_event.category.to_string(),
+            other_transaction.category.to_string()
+        );
+        assert_eq!(transaction_event.description, other_transaction.description);
+        assert_eq!(
+            transaction_event.account.to_string(),
+            other_transaction.account.to_string()
+        );
     }
 }

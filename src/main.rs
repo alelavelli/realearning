@@ -1,4 +1,4 @@
-use std::process;
+use std::{fs::DirBuilder, path::Path, process};
 
 use clap::Parser;
 use log::{error, info, warn};
@@ -17,10 +17,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::Builder::new()
         .filter_level(args.verbose.log_level_filter())
         .init();
-
-    info!("{:?}", args.input_file);
-    info!("{:?}", args.plot_folder);
-    info!("{:?}", args.compatibility);
 
     let re = Regex::new(r"^\d{4}-\d{2}$").unwrap();
 
@@ -56,6 +52,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .unwrap();
             info!("The registry has shape {:?}", df.shape());
 
+            if !Path::new(&args.plot_folder).is_dir() {
+                DirBuilder::new()
+                    .create(&args.plot_folder)
+                    .map_err(|e| {
+                        error!(
+                            "{}",
+                            format!(
+                                "Failed to create plot directory {} with error \"{}\"",
+                                args.plot_folder, e
+                            )
+                        );
+                        process::exit(1)
+                    })
+                    .unwrap();
+            }
             plot_daily_transactions(&loaded_registry, R720, &args.plot_folder, &RED_PALETTE)
                 .unwrap();
             plot_category_pie(&loaded_registry, R720, 7, &args.plot_folder, &RED_PALETTE).unwrap();

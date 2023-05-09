@@ -1,3 +1,8 @@
+//! Registry module to manage registry
+//!
+//! A Registry is composed of a set of accounts and transactions over them
+//!
+
 use super::{account::Account, transaction::TransactionEvent};
 use csv;
 use polars::prelude::*;
@@ -18,6 +23,7 @@ pub struct Registry {
 }
 
 impl Registry {
+    /// Create a new registry empty or with accounts
     pub fn new(accounts: Option<Vec<Account>>) -> Registry {
         let accounts = accounts.unwrap_or_default();
 
@@ -64,10 +70,12 @@ impl Registry {
         }
     }
 
+    /// Returns the account names in the regirty as a vector of strings
     pub fn get_accounts(&self) -> Vec<String> {
         self.accounts.keys().map(|x| (*x).clone()).collect()
     }
 
+    /// Returns the sum of the initial values of the accounts in the registry
     pub fn get_initial_account_values(&self, accounts: Option<&Vec<String>>) -> f32 {
         let mut value: f32 = 0.;
         let mut accounts_to_use = &self.get_accounts();

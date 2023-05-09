@@ -1,9 +1,11 @@
+//! Application Input Output
+
 use clap::Parser;
 use clap_verbosity_flag::Verbosity;
 
 use crate::compatibility::CompatibilityEnum;
 
-/// Arguments to pass to clit application
+/// Arguments to pass to cli application
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct CliArgs {
