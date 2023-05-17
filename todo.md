@@ -1,5 +1,0 @@
-- [ ] reduce number of mesh grid lines
-- [ ] category transaction pie for each month
-- [ ] function to extract data for transaction pie
-- [ ] function to extract data for monthly net ts
-- [ ] prettify plots with new colors
