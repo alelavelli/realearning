@@ -3,7 +3,7 @@
 //! `extraction` is a colletion of utilities to extract information from a registry to make report plots
 //!
 use crate::model::registry::Registry;
-use chrono::NaiveDate;
+use chrono::{NaiveDate, Duration};
 use itertools::Itertools;
 use polars::lazy::dsl::col;
 use polars::prelude::*;
@@ -88,6 +88,56 @@ fn filter_registry_df(
     Ok(df)
 }
 
+/// returns a new dataframe with new rows for missing dates
+/// in the interval of dates of the original dataframe
+fn fill_missing_dates(df: DataFrame) -> DataFrame {
+    let min_date: NaiveDate = df
+        .column("date")
+        .unwrap()
+        .date()
+        .unwrap()
+        .as_date_iter()
+        .min()
+        .unwrap()
+        .unwrap();
+
+    let max_date: NaiveDate = df
+        .column("date")
+        .unwrap()
+        .date()
+        .unwrap()
+        .as_date_iter()
+        .max()
+        .unwrap()
+        .unwrap();
+
+    let existing_dates: Vec<NaiveDate> = df
+        .column("date")
+        .unwrap()
+        .date()
+        .unwrap()
+        .as_date_iter()
+        .map(|x| x.unwrap())
+        .collect();
+    
+    let mut date = min_date;
+    let mut missing_dates: Vec<NaiveDate> = Vec::new();
+    while !date.eq(&max_date) {
+        date = date + Duration::days(1);
+        if !existing_dates.contains(&date) {
+            missing_dates.push(date)
+        }
+    }
+    let len = missing_dates.len();
+    let additional_rows = DataFrame::new(vec![
+        Series::new("date", missing_dates),
+        Series::new("amount", vec![0.0; len])
+    ]).unwrap();
+
+    df.vstack(&additional_rows).unwrap().sort(["date"], false).unwrap()
+
+}
+
 /// extract_daily_transaction returns a tuple with two elements: a vector of dates
 /// and a vector of floats representing the amount
 ///
@@ -122,8 +172,12 @@ pub fn extract_daily_transactions(
                 multithreaded: true,
             },
         )
-        .with_column(col("amount").cumsum(false).alias("amount_cumsum"))
         .collect()?;
+
+
+    // Add rows for missing dates and value equal to 0
+    let df = fill_missing_dates(df);
+    let df = df.lazy().with_column(col("amount").cumsum(false).alias("amount_cumsum")).collect().unwrap();
 
     let days: Vec<NaiveDate> = df
         .column("date")

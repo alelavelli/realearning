@@ -34,7 +34,7 @@ pub fn plot_daily_transactions(
         .margin_right(30)
         .caption("timeseries", ("sans-serif", 20))
         .build_cartesian_2d(
-            (daily_transactions.days_idx_range.0..(daily_transactions.days_idx_range.1)).step(10.0),
+            (daily_transactions.days_idx_range.0..(daily_transactions.days_idx_range.1)).step(1.0),
             (daily_transactions.amounts_range.0..(daily_transactions.amounts_range.1)).step(500.0),
         )?;
 
@@ -45,13 +45,23 @@ pub fn plot_daily_transactions(
             filled: false,
             stroke_width: 1,
         })
-        .x_labels(10) // number of labels per axis
-        .y_labels(10)
+        .x_labels(30) // number of labels per axis
+        .y_labels(20)
         .y_label_formatter(&|x| format!("{:.0}", x))
         .x_label_formatter(&|x| format!("{:.3}", daily_transactions.days.get(*x as usize).unwrap()))
         .y_desc("Euros")
         .x_desc("Days")
         .draw()?;
+    upper_chart.draw_series(
+        LineSeries::new(
+            daily_transactions.days_idx.iter().map(|&x| (x, 0.0)).collect::<Vec<(f32, f32)>>(),
+        ShapeStyle {
+            color: RGBAColor(0, 0, 0, 1.0),
+            filled: false,
+            stroke_width: 1,
+        }
+    )
+    ).unwrap();
     upper_chart.draw_series(
         LineSeries::new(
             daily_transactions.amounts_pairs,
@@ -63,6 +73,7 @@ pub fn plot_daily_transactions(
         )
         .point_size(2),
     )?;
+    
 
     let mut cumulative_chart = ChartBuilder::on(&lower)
         .caption("cumulative transactions", ("sans-serif", 20).into_font())
@@ -72,10 +83,10 @@ pub fn plot_daily_transactions(
         .margin_right(30)
         .margin_bottom(20)
         .build_cartesian_2d(
-            (daily_transactions.days_idx_range.0..(daily_transactions.days_idx_range.1)).step(10.0),
+            (daily_transactions.days_idx_range.0..(daily_transactions.days_idx_range.1)).step(1.0),
             (daily_transactions.cumsum_amounts_range.0
                 ..(daily_transactions.cumsum_amounts_range.1))
-                .step(1500.0),
+                .step(1000.0),
         )?;
 
     cumulative_chart.draw_series(
@@ -96,8 +107,8 @@ pub fn plot_daily_transactions(
             filled: false,
             stroke_width: 1,
         })
-        .x_labels(10) // number of labels per axis
-        .y_labels(10)
+        .x_labels(30) // number of labels per axis
+        .y_labels(20)
         .y_label_formatter(&|x| format!("{:.0}", x))
         .x_label_formatter(&|x| format!("{:.3}", daily_transactions.days.get(*x as usize).unwrap()))
         .y_desc("Euros")
@@ -198,7 +209,7 @@ pub fn plot_monthly_report(
     root_area.fill(&WHITE).unwrap();
     root_area.titled("Monthly Plots", ("sans-serif", 30))?;
 
-    let (upper, mid) = root_area.split_vertically(resolution.1 / 3);
+    let (upper, mid) = root_area.split_vertically(resolution.1 / 2);
 
     // UPPER
     let mut upper_chart = ChartBuilder::on(&upper)
@@ -212,13 +223,13 @@ pub fn plot_monthly_report(
             (monthly_extraction.months_idx_range.0..(monthly_extraction.months_idx_range.1))
                 .step(1.0),
             (monthly_extraction.net_income_range.0..(monthly_extraction.net_income_range.1))
-                .step(500.0),
+                .step(100.0),
         )?;
 
     upper_chart
         .configure_mesh()
-        .x_labels(5) // number of labels per axis
-        .y_labels(5)
+        .x_labels(monthly_extraction.months_idx.len()) // number of labels per axis
+        .y_labels(20)
         .y_label_formatter(&|x| format!("{:.0}", x))
         .x_label_formatter(&|x| format!("{}", monthly_extraction.months.get(*x as usize).unwrap()))
         .y_desc("Euros")
@@ -235,6 +246,17 @@ pub fn plot_monthly_report(
         )
         .point_size(3),
     )?;
+
+    upper_chart.draw_series(
+        LineSeries::new(
+            monthly_extraction.months_idx.iter().map(|&x| (x, 0.0)).collect::<Vec<(f32, f32)>>(),
+        ShapeStyle {
+            color: RGBAColor(0, 0, 0, 1.0),
+            filled: true,
+            stroke_width: 2,
+        }
+    )
+    ).unwrap();
 
     // MID
     let mut mid_chart = ChartBuilder::on(&mid)
@@ -255,7 +277,7 @@ pub fn plot_monthly_report(
     mid_chart
         .configure_mesh()
         .x_labels(5) // number of labels per axis
-        .y_labels(5)
+        .y_labels(30)
         //.y_label_formatter(&|x| format!("{:.0}", 10.0.pow(x))) logarithmic
         .y_label_formatter(&|x| format!("{:.0}", x))
         .x_label_formatter(&|x| {
