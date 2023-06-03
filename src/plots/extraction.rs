@@ -367,7 +367,6 @@ pub fn monthy_extraction(
         .with_column(col("date").alias("year-month").dt().truncate("1mo", "1"))
         .groupby(["year-month"])
         .agg([col("amount").sum()])
-        //.with_column((col("amount") / col("amount").sum() * lit(100.0)).alias("amount_perc"))
         .sort(
             "year-month",
             SortOptions {

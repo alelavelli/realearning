@@ -1,7 +1,8 @@
 use crate::model::registry::Registry;
 use crate::plots::extraction::monthy_extraction;
+use indicatif::{MultiProgress, ProgressBar, ProgressIterator, ProgressStyle};
 use plotters::prelude::*;
-
+use std::cmp::Ordering::Equal;
 use super::extraction::{extract_categories_split, extract_daily_transactions};
 use super::plot_utils::palettes::Palette;
 
@@ -209,10 +210,8 @@ pub fn plot_monthly_report(
     root_area.fill(&WHITE).unwrap();
     root_area.titled("Monthly Plots", ("sans-serif", 30))?;
 
-    let (upper, mid) = root_area.split_vertically(resolution.1 / 2);
-
     // UPPER
-    let mut upper_chart = ChartBuilder::on(&upper)
+    let mut upper_chart = ChartBuilder::on(&root_area)
         .x_label_area_size(50)
         .y_label_area_size(50)
         .margin_left(30)
@@ -257,38 +256,69 @@ pub fn plot_monthly_report(
         }
     )
     ).unwrap();
+    root_area.present()?;
 
     // MID
-    let mut mid_chart = ChartBuilder::on(&mid)
-        .x_label_area_size(50)
-        .y_label_area_size(50)
-        .margin_left(30)
-        .margin_right(30)
-        .caption("monthly spend for each category", ("sans-serif", 20))
-        .build_cartesian_2d(
-            (monthly_extraction.categories_months_idx_range.0
-                ..(monthly_extraction.categories_months_idx_range.1))
-                .step(1.0),
-            (monthly_extraction.categories_amounts_range.0
-                ..(monthly_extraction.categories_amounts_range.1))
-                .step(100.0),
-        )?;
+    let multi_progress = MultiProgress::new();
+    let progress_bar = multi_progress.add(ProgressBar::new(monthly_extraction.categories.len() as u64));
+    for (i, category) in monthly_extraction.categories.iter().enumerate().progress_with(progress_bar) {
+        let mut spinner = ProgressBar::new_spinner();
+        spinner.enable_steady_tick(std::time::Duration::from_secs(1));
+        spinner.set_style(
+            ProgressStyle::default_spinner()
+                // For more spinners check out the cli-spinners project:
+                // https://github.com/sindresorhus/cli-spinners/blob/master/spinners.json
+                .tick_strings(&[
+                    "▹▹▹▹▹",
+                    "▸▹▹▹▹",
+                    "▹▸▹▹▹",
+                    "▹▹▸▹▹",
+                    "▹▹▹▸▹",
+                    "▹▹▹▹▸",
+                    "▪▪▪▪▪",
+                ])
+                .template("{spinner:.blue} {msg}")
+                .unwrap(),
+        );
+        spinner = multi_progress.add(spinner);
 
-    mid_chart
-        .configure_mesh()
-        .x_labels(5) // number of labels per axis
-        .y_labels(30)
-        //.y_label_formatter(&|x| format!("{:.0}", 10.0.pow(x))) logarithmic
-        .y_label_formatter(&|x| format!("{:.0}", x))
-        .x_label_formatter(&|x| {
-            format!("{:.3}", monthly_extraction.months.get(*x as usize).unwrap())
-        })
-        .y_desc("Euros")
-        .x_desc("Month")
-        .draw()?;
+        spinner.set_message(format!("Creating plot for {category}"));
 
-    for (i, category) in monthly_extraction.categories.iter().enumerate() {
         let pairs = monthly_extraction.categories_pairs.get(i).unwrap().clone();
+        let min_y = pairs.iter().map(|x| x.1).min_by(|x, y| x.partial_cmp(y).unwrap_or(Equal)).unwrap();
+        let max_y = pairs.iter().map(|x| x.1).max_by(|x, y| x.partial_cmp(y).unwrap_or(Equal)).unwrap();
+        let categories_figure_path = format!("{folder}/categories/monthly_{category}.png");
+        let root_area = BitMapBackend::new(&categories_figure_path, resolution).into_drawing_area();
+        root_area.fill(&WHITE).unwrap();
+        root_area.titled(&format!("Monthly Plot {category}"), ("sans-serif", 30))?;
+        let mut mid_chart = ChartBuilder::on(&root_area)
+            .x_label_area_size(50)
+            .y_label_area_size(50)
+            .margin_left(30)
+            .margin_right(30)
+            .margin_top(30)
+            //.caption("monthly spend for category", ("sans-serif", 20))
+            .build_cartesian_2d(
+                (monthly_extraction.categories_months_idx_range.0
+                    ..(monthly_extraction.categories_months_idx_range.1))
+                    .step(1.0),
+                ((min_y - 50.0)..(max_y + 50.0)).step(1.0),
+            )?;
+            
+        mid_chart
+            .configure_mesh()
+            .x_labels(12) // number of labels per axis
+            .y_labels(30)
+            //.y_label_formatter(&|x| format!("{:.0}", 10.0.pow(x))) logarithmic
+            .y_label_formatter(&|x| format!("{:.0}", x))
+            .x_label_formatter(&|x| {
+                format!("{:.3}", monthly_extraction.months.get(*x as usize).unwrap())
+            })
+            .y_desc("Euros")
+            .x_desc("Month")
+            .draw()?;
+
+
         mid_chart
             .draw_series(
                 LineSeries::new(
@@ -299,7 +329,7 @@ pub fn plot_monthly_report(
                         stroke_width: 2,
                     },
                 )
-                .point_size(3),
+                .point_size(5),
             )
             .unwrap()
             .label(category)
@@ -313,20 +343,12 @@ pub fn plot_monthly_report(
                     },
                 )
             });
+        root_area.present()?; 
+        spinner.finish_with_message(format!("{category} plot done"));
+
+        
     }
-    mid_chart
-        .configure_series_labels()
-        .border_style(BLACK)
-        .background_style(WHITE.mix(0.8))
-        .position(SeriesLabelPosition::Coordinate(
-            (resolution.1 as f32 * 0.75) as i32,
-            (resolution.0 as f32 * 0.02) as i32,
-        ))
-        .draw()
-        .unwrap();
-
-    root_area.present()?;
-
+    
     let figure_path = format!("{folder}/monthly_category_pies.png");
 
     let root_area = BitMapBackend::new(&figure_path, resolution).into_drawing_area();
