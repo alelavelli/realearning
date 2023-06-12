@@ -19,7 +19,7 @@ tag:
 	fi
 
 	@# read the current tag and export the three kinds
-	$(eval CURRENT_TAG=$(shell git describe))
+	$(eval CURRENT_TAG=$(shell git describe --tags --abbrev=0 --match="*@$(DEPLOY_ENVIRONMENT)"))
 	$(eval MAJOR=$(word 1, $(subst ., , $(subst v, , $(subst -, , $(CURRENT_TAG))))))
 	$(eval MINOR=$(word 2, $(subst ., , $(subst v, , $(subst -, , $(CURRENT_TAG))))))
 	$(eval PATCH=$(word 3, $(subst ., , $(subst v, , $(subst -, , $(CURRENT_TAG))))))
